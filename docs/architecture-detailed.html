@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Research Gap Discovery Agent · 架构与流程（详细版）</title>
+  <style>
+    :root {
+      --bg: #eef2f7;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #cbd5e1;
+      --l2: #dbeafe;
+      --l2b: #1d4ed8;
+      --l3: #dcfce7;
+      --l3b: #15803d;
+      --l4: #ffedd5;
+      --l4b: #c2410c;
+      --l5: #e0e7ff;
+      --l5b: #3730a3;
+      --l6: #fce7f3;
+      --l6b: #9d174d;
+      --l7: #1e293b;
+      --card: #ffffff;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Noto Sans SC", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 600px at 10% -10%, #dbeafe 0%, transparent 55%),
+        radial-gradient(900px 500px at 100% 0%, #ffedd5 0%, transparent 50%),
+        var(--bg);
+      line-height: 1.45;
+    }
+    .page {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+    header.hero {
+      background: linear-gradient(135deg, #0f172a, #1e3a8a 60%, #0f766e);
+      color: #f8fafc;
+      border-radius: 18px;
+      padding: 22px 26px;
+      box-shadow: var(--shadow);
+      margin-bottom: 18px;
+    }
+    header.hero h1 {
+      margin: 0 0 8px;
+      font-size: 1.55rem;
+      letter-spacing: 0.02em;
+    }
+    header.hero p {
+      margin: 0;
+      opacity: 0.92;
+      font-size: 0.95rem;
+    }
+    .badge-row { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .layer {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .layer-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      font-weight: 700;
+    }
+    .layer-head .tag {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: #fff;
+    }
+    .layer-body { padding: 14px 16px 16px; }
+    .l2 .layer-head { background: var(--l2); }
+    .l2 .tag { background: var(--l2b); }
+    .l3 .layer-head { background: var(--l3); }
+    .l3 .tag { background: var(--l3b); }
+    .l4 .layer-head { background: var(--l4); }
+    .l4 .tag { background: var(--l4b); }
+    .l5 .layer-head { background: var(--l5); }
+    .l5 .tag { background: var(--l5b); }
+    .l6 .layer-head { background: var(--l6); }
+    .l6 .tag { background: var(--l6b); }
+    .l7 .layer-head { background: #334155; color: #f8fafc; }
+    .l7 .tag { background: #0ea5e9; }
+    .l7 { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+    .l7 .card { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+    .l7 .card h4 { color: #7dd3fc; }
+    .l7 .card ul li, .l7 .muted { color: #cbd5e1; }
+
+    .grid { display: grid; gap: 10px; }
+    .grid-11 { grid-template-columns: repeat(11, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: 1.35fr 1fr; }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); }
+    .grid-7 { grid-template-columns: repeat(7, 1fr); }
+    @media (max-width: 1200px) {
+      .grid-11, .grid-7, .grid-5, .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 11px;
+      min-height: 100%;
+    }
+    .card h3, .card h4 {
+      margin: 0 0 6px;
+      font-size: 0.92rem;
+    }
+    .card .sub {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .card ul {
+      margin: 0;
+      padding-left: 1.05rem;
+      font-size: 0.78rem;
+      color: #334155;
+    }
+    .card ul li { margin: 2px 0; }
+    .node {
+      text-align: left;
+      border-top: 3px solid var(--l2b);
+    }
+    .node.star { border-top-color: #16a34a; background: #f0fdf4; }
+    .flow-note {
+      margin-top: 10px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: #f8fafc;
+      border: 1px dashed var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+    }
+    .arrows {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--l2b);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0 2px;
+    }
+    code, .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.74rem;
+    }
+    .kv {
+      display: grid;
+      grid-template-columns: 88px 1fr;
+      gap: 4px 8px;
+      font-size: 0.76rem;
+      margin-top: 6px;
+    }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; }
+    .pill {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      margin-right: 4px;
+    }
+    footer {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    .split-title { font-size: 0.8rem; font-weight: 700; margin: 0 0 8px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>Research Gap Discovery Agent · 架构与流程（详细版）</h1>
+      <p>
+        外层：确定性 LangGraph Workflow（每次研究任务） ·
+        内层：仅 <b>Gap Verify</b> 使用 Tool-Calling Agent ·
+        产品边界：发现/验证<strong>候选</strong> Research Gap，不证明全球 novelty
+      </p>
+      <div class="badge-row">
+        <span class="badge">FastAPI + SSE</span>
+        <span class="badge">LangGraph StateGraph</span>
+        <span class="badge">ToolRuntime 预算/Trace</span>
+        <span class="badge">Chroma RAG + Lexical Fallback</span>
+        <span class="badge">SQLite × 3 隔离</span>
+        <span class="badge">Qwen / DashScope</span>
+        <span class="badge">非 MCP · 进程内 @tool 白名单</span>
+      </div>
+    </header>
+
+    <!-- L0/L1 -->
+    <section class="layer l2">
+      <div class="layer-head">
+        <div>L0–L1 前端可观测 + FastAPI 网关</div>
+        <span class="tag">UI / API / SSE</span>
+      </div>
+      <div class="layer-body grid grid-3">
+        <div class="card">
+          <h4>React 前端 <span class="mono">frontend/src</span></h4>
+          <ul>
+            <li><b>HomeCompose</b>：输入主题（演示默认：跨链桥智能合约漏洞检测）</li>
+            <li><b>LangGraphCanvas</b>：节点拓扑高亮 running / done</li>
+            <li><b>StateInspector</b>：Shared State 摘要 + 逐步 diff</li>
+            <li><b>TaskObservability</b>：task_id / thread_id / 预算 / Tool Trace / Checkpoint / Resume</li>
+            <li><b>ReportPanel</b>：证据链 Markdown 报告</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>SSE 事件（结构化 type，不靠解析文案）</h4>
+          <ul>
+            <li><code>node_started</code> / <code>node_completed</code></li>
+            <li><code>state_patch</code> / <code>state_snapshot</code>（瘦身摘要，非全文）</li>
+            <li><code>tool_completed</code> / <code>tool_failed</code> / <code>checkpoint_saved</code></li>
+            <li><code>warning</code> / <code>task_paused</code> / <code>task_resumed</code></li>
+            <li><code>task_completed</code> / <code>task_failed</code> / <code>done</code></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>FastAPI <span class="mono">main.py</span></h4>
+          <ul>
+            <li><code>POST /research/stream</code>：边跑边推（演示主路径）</li>
+            <li><code>POST /research/tasks</code>：后台线程跑任务</li>
+            <li><code>GET /research/tasks/{id}</code>：当前快照（重连先拉这个）</li>
+            <li><code>POST .../resume</code>：从业务 Checkpoint 恢复</li>
+            <li><code>GET .../events?stream=true</code>：事件续传</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- L2 workflow -->
+    <section class="layer l2">
+      <div class="layer-head">
+        <div>L2 编排层 · 确定性 Workflow（LangGraph StateGraph）</div>
+        <span class="tag">graph.py / pipeline.py</span>
+      </div>
+      <div class="layer-body">
+        <p class="split-title">共享黑板 <code>ResearchState</code>：所有节点读写同一份可序列化字典（无 DB 连接、无模型客户端对象）</p>
+        <div class="grid grid-11">
+          <div class="card node">
+            <h4>1 memory_recall</h4>
+            <div class="sub">记忆召回</div>
+            <ul>
+              <li>按 topic 精确匹配召回</li>
+              <li>REJECTED Gap + reason 前置</li>
+              <li>近期 queries / artifacts</li>
+              <li>写入 <code>research_memory</code></li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>2 planner</h4>
+            <div class="sub">研究规划</div>
+            <ul>
+              <li>研究问题拆解</li>
+              <li>英文学术 keywords</li>
+              <li>避开历史 REJECTED</li>
+              <li>主题过宽 → <code>NEEDS_USER_INPUT</code></li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>3 search</h4>
+            <div class="sub">学术检索</div>
+            <ul>
+              <li>调 AcademicSearchService</li>
+              <li>OpenAlex ↔ S2 → Seed</li>
+              <li>相关性过滤 / 去重</li>
+              <li>写入 <code>papers</code></li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>4 paper_reader</h4>
+            <div class="sub">全文→卡片</div>
+            <ul>
+              <li>OA PDF 获取</li>
+              <li>pypdf 章节切分</li>
+              <li>生成 PaperCard</li>
+              <li>同步喂给 RAG 索引</li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>5 analyzer</h4>
+            <div class="sub">方法分析</div>
+            <ul>
+              <li>方法 taxonomy</li>
+              <li>自报 limitations</li>
+              <li>analysis 摘要</li>
+              <li>为证据链提供原料</li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>6 evidence_chain</h4>
+            <div class="sub">证据链</div>
+            <ul>
+              <li>后续 citing papers</li>
+              <li>citation context 批评</li>
+              <li>evolution 演进边</li>
+              <li>limitation lifecycle</li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>7 gap_discover</h4>
+            <div class="sub">提出候选</div>
+            <ul>
+              <li>综合生命周期</li>
+              <li>生成 candidate_gaps</li>
+              <li>对照 Memory 去重</li>
+              <li>仍是「候选」边界</li>
+            </ul>
+          </div>
+          <div class="card node star">
+            <h4>8 gap_verify ★</h4>
+            <div class="sub">唯一 Agent</div>
+            <ul>
+              <li>Tool-Calling 验证</li>
+              <li>预算 / Trace / 安全</li>
+              <li>KEEP·REFINED·REJECTED</li>
+              <li>写入 verified_gaps</li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>9 cross_domain</h4>
+            <div class="sub">条件边</div>
+            <ul>
+              <li>需要更多启发时进入</li>
+              <li>跨域方法抽象</li>
+              <li>可跳过</li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>10 finalize</h4>
+            <div class="sub">候选方向</div>
+            <ul>
+              <li>整理 final_candidates</li>
+              <li>人工复核声明</li>
+              <li>置信度/风险</li>
+            </ul>
+          </div>
+          <div class="card node">
+            <h4>11 report</h4>
+            <div class="sub">报告</div>
+            <ul>
+              <li>证据边界报告</li>
+              <li>引用真实性校验</li>
+              <li>剥离「全球首次」</li>
+              <li>SSE 推送 markdown</li>
+            </ul>
+          </div>
+        </div>
+        <div class="flow-note">
+          <b>路由：</b>线性走到 <code>gap_verify</code> 后条件边 → <code>cross_domain</code> 或直接 <code>finalize</code>。
+          SSE 主路径用 <code>iter_pipeline</code>（同节点函数）；每完成一节点写入业务 Checkpoint（完整 State JSON）。
+        </div>
+      </div>
+    </section>
+
+    <!-- L3 agent + runtime + toolbox -->
+    <section class="layer l3">
+      <div class="layer-head">
+        <div>L3 Tool-Calling Agent · 工具箱 · ToolRuntime</div>
+        <span class="tag">verify_agent / tool_runtime</span>
+      </div>
+      <div class="layer-body grid grid-2">
+        <div class="card">
+          <h4>Gap Verify Agent（唯一 ReAct 循环）</h4>
+          <div class="sub">verify_agent.py · ChatOpenAI.bind_tools</div>
+          <ul>
+            <li>输入：topic + candidate_gap + paper_cards + memory + critiques</li>
+            <li>循环：LLM 决策 → tool_calls → ToolMessage → 再决策</li>
+            <li>输出判决：<b>KEEP / REFINED / REJECTED</b></li>
+            <li>执行终止（另一维度）：COMPLETED / BUDGET_EXCEEDED / INSUFFICIENT_EVIDENCE / TOOL_FAILURE</li>
+            <li>Prompt 分区：System / User / <b>UNTRUSTED_EVIDENCE</b>（论文不可覆盖指令）</li>
+            <li>未充分验证时仍可 KEEP，但报告必须写清「验证未完成」</li>
+          </ul>
+          <dl class="kv">
+            <dt>模型</dt><dd>默认 <code>qwen-plus</code>（DashScope OpenAI 兼容）</dd>
+            <dt>轮次上限</dt><dd><code>GAP_VERIFY_TOOL_ROUNDS</code> ∩ <code>GAP_AGENT_RECURSION_CAP</code>（默认≤12）</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h4>ToolRuntime = 工具安全执行器</h4>
+          <div class="sub">不是业务 Tool 本身；不自动换数据源</div>
+          <ul>
+            <li><b>门禁</b>：工具白名单、max_tool_calls、动作签名去重（visited_actions）</li>
+            <li><b>超时</b>：ThreadPoolExecutor + <code>GAP_TOOL_TIMEOUT_S</code>（默认 30s）</li>
+            <li><b>重试</b>：timeout/429/transient → 指数退避 <code>(2^n)*0.25 + jitter</code></li>
+            <li><b>Empty</b>：HTTP 成功但 0 结果 → status=empty，累计 empty_streak</li>
+            <li><b>Trace</b>：每次 attempt 一条（trace_id、args、duration、status、retry_index、result_summary…）</li>
+            <li><b>不负责</b>：Ask User（在 planner）、换 OpenAlex→S2（在 AcademicSearchService）</li>
+          </ul>
+        </div>
+        <div class="card" style="grid-column: 1 / -1;">
+          <h4>工具箱 Toolbox（进程内 @tool 白名单 · 非 MCP）</h4>
+          <div class="grid grid-3" style="margin-top:8px;">
+            <div>
+              <span class="pill">检索</span>
+              <ul>
+                <li><code>search_papers</code> → AcademicSearch；内部可有限 Query Rewrite（预算 2）</li>
+                <li><code>retrieve_rag</code> → PaperRAG Top-K 证据块</li>
+                <li><code>recall_memory</code> → ResearchMemory + REJECTED 原因</li>
+              </ul>
+            </div>
+            <div>
+              <span class="pill">引用证据链</span>
+              <ul>
+                <li><code>find_citing_papers</code> → 后续引用/相关工作</li>
+                <li><code>get_citation_context</code> → 引用语境批评类型</li>
+                <li><code>read_fulltext_section</code> → limitations/method 等已索引章节</li>
+              </ul>
+            </div>
+            <div>
+              <span class="pill">返回给模型的形态</span>
+              <ul>
+                <li>一律 JSON 字符串瘦身结果（标题/片段/count）</li>
+                <li>不把全文 PDF / 大向量写进 Trace</li>
+                <li>失败时 ToolMessage 带 error_type / retryable / suggested_action 标签</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- L4 services -->
+    <section class="layer l4">
+      <div class="layer-head">
+        <div>L4 能力服务层（节点与工具共同调用）</div>
+        <span class="tag">services / gap_discovery/*</span>
+      </div>
+      <div class="layer-body grid grid-4">
+        <div class="card">
+          <h4>AcademicSearchService</h4>
+          <ul>
+            <li>入口：<code>sanitize_academic_query</code></li>
+            <li>主路径：OpenAlex / Semantic Scholar（可互备）</li>
+            <li>单源有限 retry；双源失败或空 → <b>seed_corpus</b></li>
+            <li><code>FORCE_SEED_CORPUS</code> 可强制离线演示</li>
+            <li>返回：results + backend + notices</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>CitationService + fulltext</h4>
+          <ul>
+            <li>找 citing / related papers（年龄感知预算）</li>
+            <li>从 citing 全文抽 citation context</li>
+            <li>批评类型：CRITIQUE 等；不可用则不编造</li>
+            <li>OA PDF 下载 + pypdf 章节（limitations/method…）</li>
+            <li>无付费墙破解</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>PaperRAG + ContextBuilder</h4>
+          <ul>
+            <li>索引：PaperCard 文本块 + Memory 条目</li>
+            <li>向量：DashScope Embedding → Chroma</li>
+            <li>失败：Lexical 词面余弦 Top-K</li>
+            <li>ContextBuilder：为 gap 拼验证上下文</li>
+            <li>空命中不自动联网（可由 Agent 再调 search）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>ResearchMemoryStore 等</h4>
+          <ul>
+            <li>长期记忆（跨 run），按规范化 topic</li>
+            <li>Gap 与 REJECTED 词面/可选向量去重</li>
+            <li>query 按 topic 保留最新 N 条（默认 40）</li>
+            <li>relevance：中文主题→英文学术 query</li>
+            <li>evolution：演进边 + limitation lifecycle</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- L5 storage DETAILED -->
+    <section class="layer l5">
+      <div class="layer-head">
+        <div>L5 存储与持久化（每库存什么 · 详细）</div>
+        <span class="tag">Chroma / SQLite×3</span>
+      </div>
+      <div class="layer-body grid grid-3">
+        <div class="card">
+          <h4>① Chroma · RAG 向量库</h4>
+          <div class="sub">路径：<code>workspace/chroma_papers</code> · collection 默认 <code>paper_cards</code></div>
+          <ul>
+            <li><b>存什么（每条 chunk）</b>
+              <ul>
+                <li><code>id</code>：chunk_id</li>
+                <li><code>document</code>：文本块（≤约 4000 字入库）</li>
+                <li><code>embedding</code>：DashScope 向量</li>
+                <li><code>metadata</code>：paper_id、title、year、section（如 limitations）</li>
+              </ul>
+            </li>
+            <li><b>文本从哪来</b>：PaperCard 摘要/局限/章节片段；Memory 条目也可入库</li>
+            <li><b>检索返回</b>：score、paper_id、title、section、year、text 摘要、backend=chroma|lexical</li>
+            <li><b>Fallback</b>：Embedding/Chroma 失败 → 内存 LexicalIndex（token 余弦）</li>
+            <li><b>注意</b>：默认可在 init 清空 session collection（本轮任务新鲜索引），不是跨任务永久文献湖</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>② SQLite · research_memory.db</h4>
+          <div class="sub">长期研究记忆（与 tasks 库表级隔离）</div>
+          <ul>
+            <li><b>表 papers</b>：paper_id、topic、title、year、payload(JSON)、updated_at</li>
+            <li><b>表 gaps</b>：gap_id、topic、description、<b>status</b>（KEEP/REFINED/REJECTED）、<b>reason</b>、payload、updated_at</li>
+            <li><b>表 queries</b>：topic、query、purpose（landscape/verify/…）、created_at；按 topic 裁剪最新 N 条</li>
+            <li><b>表 artifacts</b>：topic、kind、key、payload（各类工件快照）</li>
+            <li><b>召回</b>：exact topic；REJECTED+reason 优先给 planner/discover/verify</li>
+            <li><b>去重</b>：新 Gap vs 历史 REJECTED（词面相似 + 可选 embedding）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>③ SQLite · research_tasks.db</h4>
+          <div class="sub">任务 / 业务 Checkpoint / 事件 / 幂等</div>
+          <ul>
+            <li><b>research_tasks</b>：task_id、thread_id、topic、status、current_node、termination_reason、时间戳</li>
+            <li><b>task_checkpoints</b>：checkpoint_id、node_name、<b>state_json=完整 ResearchState</b></li>
+            <li><b>task_events</b>：seq + event_json（可重放 SSE）</li>
+            <li><b>side_effect_log</b>：幂等键（如 save_gap / save_query）防 Resume 重复写</li>
+            <li><b>Resume</b>：latest checkpoint → 按 <code>completed_nodes</code> 跳过已完成节点</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>④ SQLite · langgraph_checkpoints.db</h4>
+          <div class="sub">官方 SqliteSaver（checkpointer.py）</div>
+          <ul>
+            <li>在 <code>graph.compile(checkpointer=…)</code> 接入</li>
+            <li>真正写入主要在 <code>compiled.invoke(..., thread_id)</code></li>
+            <li>SSE/<code>iter_pipeline</code> 演示主路径<strong>不依赖</strong>它做 Resume</li>
+            <li>thread_id = Checkpoint 命名空间，与 task_id 默认常相同但语义不同</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>⑤ ResearchState 内存黑板（会进 Checkpoint）</h4>
+          <div class="sub">一次 run 的工作记忆</div>
+          <ul>
+            <li>身份：task_id、thread_id、current_node、completed_nodes</li>
+            <li>文献：papers、paper_cards、rag_hits</li>
+            <li>分析：analysis、limitations、evolution_chain、critiques</li>
+            <li>Gap：candidate_gaps、verified_gaps、gap_verification_results</li>
+            <li>控制：tool_call_count、verification_round、visited_actions、tool_traces、warnings、termination_reason…</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>⑥ PaperCard 里有什么（进 RAG 前的结构化文献）</h4>
+          <div class="sub">models.py · 存在 State，也可落 Memory payload</div>
+          <ul>
+            <li>paper_id / title / year / abstract / url / doi</li>
+            <li>methods、claimed_contributions、limitations</li>
+            <li>evidence_refs（章节引用片段）</li>
+            <li>fulltext_status：FULLTEXT | ABSTRACT_ONLY | FAILED</li>
+            <li>这是 Reader 的核心产物，Analyzer / RAG / Verify 都依赖它</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- L6 -->
+    <section class="layer l6">
+      <div class="layer-head">
+        <div>L6 执行预算 · 安全 · 可观测 · 失败策略</div>
+        <span class="tag">横切能力</span>
+      </div>
+      <div class="layer-body grid grid-4">
+        <div class="card">
+          <h4>Budget</h4>
+          <ul>
+            <li>verification_round：验几个候选 Gap</li>
+            <li>Agent 内 LLM 轮次上限</li>
+            <li>max_tool_calls + visited 去重</li>
+            <li>单工具 timeout / 任务 deadline（默认 900s）</li>
+            <li>empty_streak；可选 token_budget（依赖 usage_metadata）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Safety</h4>
+          <ul>
+            <li>System / User / Untrusted Evidence 分区</li>
+            <li>工具白名单；文档不能改预算</li>
+            <li>injection 短语写入 warnings</li>
+            <li>报告前校验 paper_id/标题是否在证据集</li>
+            <li>剥离「全球首次 / 已证明创新」措辞</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Observability</h4>
+          <ul>
+            <li>tool_traces → State → Checkpoint</li>
+            <li>SSE state_patch / tool_* / checkpoint_saved</li>
+            <li>前端 TaskObservability 时间线</li>
+            <li>evals/ 离线硬规则评测基线</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>失败策略分层</h4>
+          <ul>
+            <li>Runtime：异常分类 → retry（jitter）</li>
+            <li>search_papers：Query rewrite（有预算）</li>
+            <li>AcademicSearch：换源 + Seed fallback</li>
+            <li>Planner：ask_user（NEEDS_USER_INPUT）</li>
+            <li>Budget/权限/死循环：stop + 保留已有证据</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- L7 -->
+    <section class="layer l7">
+      <div class="layer-head">
+        <div>L7 最底层外部 API / 模型 / 本地引擎</div>
+        <span class="tag">Foundation</span>
+      </div>
+      <div class="layer-body grid grid-5">
+        <div class="card">
+          <h4>大语言模型</h4>
+          <ul>
+            <li>默认：通义 <b>Qwen</b>（qwen-plus）</li>
+            <li>协议：OpenAI Compatible</li>
+            <li>网关：DashScope compatible-mode</li>
+            <li>也可配 Ollama / LM Studio</li>
+            <li>用途：Planner / Analyzer / Verify / Report</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>Embedding</h4>
+          <ul>
+            <li>DashScope Embedding API</li>
+            <li>供 Chroma 入库与查询</li>
+            <li>Memory Gap 去重可选用</li>
+            <li>失败 → Lexical，不阻断主流程</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>学术检索 API</h4>
+          <ul>
+            <li>OpenAlex Works</li>
+            <li>Semantic Scholar Graph</li>
+            <li>本地 seed_corpus 兜底</li>
+            <li>可选 S2 API Key 提高限额</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>全文与解析</h4>
+          <ul>
+            <li>OA PDF HTTP 下载</li>
+            <li>pypdf 解析</li>
+            <li>章节：limitations / method…</li>
+            <li>失败则 ABSTRACT_ONLY</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4>本地存储引擎</h4>
+          <ul>
+            <li>Chroma PersistentClient</li>
+            <li>SQLite × 3 库文件</li>
+            <li>未使用：MCP Server/Client</li>
+            <li>未使用：Skill Registry</li>
+            <li>网页搜索非主源（可配置但非演示主路径）</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      打开方式：浏览器直接打开本文件即可全屏查看 / 投影。内容对齐当前仓库实现，不包含 MCP。
+      文件位置：<span class="mono">helloagents-deepresearch/docs/architecture-detailed.html</span>
+    </footer>
+  </div>
+</body>
+</html>

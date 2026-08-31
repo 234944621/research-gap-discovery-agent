@@ -1,0 +1,37 @@
+# 依赖与虚拟环境
+backend/.venv/
+frontend/node_modules/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+*.egg-info/
+.uv/
+
+# 密钥与本地配置
+.env
+.env.*
+!.env.example
+backend/.env
+**/*.pem
+
+# 运行时数据 / 本地库（勿上传）
+backend/workspace/
+backend/notes/
+**/chroma_papers/
+**/*.db
+!**/.gitkeep
+
+# 前端构建
+frontend/dist/
+
+# 系统与 IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.log
+
+# 评测大报告可按需保留；忽略临时
+evals/reports/*.tmp

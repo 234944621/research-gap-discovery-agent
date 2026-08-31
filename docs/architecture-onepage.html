@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>科研空白发现智能体 · 一页架构</title>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --blue: #1d4ed8;
+      --green: #15803d;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+    body {
+      font-family: "PingFang SC", "Noto Sans SC", system-ui, sans-serif;
+      color: var(--ink);
+      background: #e8eef5;
+      font-size: 11px;
+      line-height: 1.3;
+    }
+    .sheet {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 8px 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-content: flex-start;
+    }
+    header {
+      background: linear-gradient(120deg, #0f172a, #1e3a8a 60%, #0f766e);
+      color: #f8fafc;
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    header h1 { margin: 0; font-size: 13px; white-space: nowrap; }
+    header p { margin: 0; font-size: 10.5px; opacity: 0.92; }
+
+    .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .ph {
+      padding: 3px 8px;
+      font-weight: 700;
+      font-size: 10.5px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+    }
+    .pb { padding: 5px 7px; }
+    .ph .t { font-size: 9px; color: #fff; background: var(--blue); padding: 1px 6px; border-radius: 99px; }
+    .p-flow .ph { background: #dbeafe; }
+    .p-mid .ph { background: #fef9c3; }
+    .p-mid .ph .t { background: #a16207; }
+    .p-bot .ph { background: #e0e7ff; }
+    .p-bot .ph .t { background: #3730a3; }
+    .p-api .ph { background: #334155; color: #f8fafc; }
+    .p-api .ph .t { background: #0ea5e9; }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(11, minmax(0, 1fr));
+      gap: 3px;
+    }
+    .node {
+      border: 1px solid var(--line);
+      border-top: 2px solid var(--blue);
+      border-radius: 5px;
+      padding: 3px 4px;
+      background: #f8fafc;
+    }
+    .node.star { border-top-color: var(--green); background: #f0fdf4; }
+    .node b { display: block; font-size: 10px; }
+    .node i { display: block; font-style: normal; font-size: 9px; color: var(--muted); }
+
+    .mid {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr 1fr;
+      gap: 6px;
+      align-items: start;
+    }
+    .cols2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      align-items: start;
+    }
+    .box {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 6px;
+      background: #fff;
+    }
+    .box h4 { margin: 0 0 2px; font-size: 10.5px; }
+    .box ul { margin: 0; padding-left: 12px; }
+    .box li { font-size: 9.5px; color: #334155; }
+    .step {
+      margin-top: 4px;
+      font-size: 9px;
+      color: var(--muted);
+      background: #f8fafc;
+      border: 1px dashed var(--line);
+      border-radius: 4px;
+      padding: 3px 5px;
+    }
+    .memrag {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      align-items: start;
+    }
+    .bot {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1.1fr;
+      gap: 5px;
+    }
+    .pipe {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 3px;
+      margin: 3px 0 4px;
+      font-size: 9px;
+    }
+    .pipe span {
+      background: #f1f5f9;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      padding: 1px 5px;
+      color: #334155;
+    }
+    .pipe .arr { background: transparent; border: 0; color: var(--muted); padding: 0; }
+    .api {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px;
+    }
+    .api .box { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+    .api .box h4 { color: #7dd3fc; margin: 0 0 2px; font-size: 10px; }
+    .api .box li { color: #cbd5e1; font-size: 9px; }
+    code { font-family: ui-monospace, Menlo, monospace; font-size: 9px; }
+    .one-line { font-size: 9.5px; color: var(--muted); margin: 3px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <header>
+      <h1>科研空白发现智能体 · 一页架构</h1>
+      <p>Workflow + 仅 Gap Verify Tool-Calling · 候选 Gap · SSE 观测 · 非 MCP · State 黑板 + Checkpoint 存档</p>
+    </header>
+
+    <!-- Row 1: flow -->
+    <section class="panel p-flow">
+      <div class="ph"><span>① 主流程（共享 ResearchState）</span><span class="t">LangGraph</span></div>
+      <div class="pb">
+        <div class="flow">
+          <div class="node"><b>memory_recall</b><i>recall_bundle→State；REJECTED置顶</i></div>
+          <div class="node"><b>planner</b><i>问题与检索词；避历史 REJECTED</i></div>
+          <div class="node"><b>search</b><i>学术检索 → papers</i></div>
+          <div class="node"><b>paper_reader</b><i>OA PDF→Card；verify前灌RAG</i></div>
+          <div class="node"><b>analyzer</b><i>方法/局限分析</i></div>
+          <div class="node"><b>evidence_chain</b><i>引用批评·演进·生命周期</i></div>
+          <div class="node"><b>gap_discover</b><i>candidate_gaps</i></div>
+          <div class="node star"><b>gap_verify★</b><i>唯一 Agent 验证</i></div>
+          <div class="node"><b>cross_domain?</b><i>条件：跨域启发</i></div>
+          <div class="node"><b>finalize</b><i>候选方向整理</i></div>
+          <div class="node"><b>report</b><i>证据边界报告</i></div>
+        </div>
+        <p class="one-line">节点读写同一份 State；前端 SSE <code>state_patch</code> 看摘要+diff · API：<code>/research/stream</code>、tasks/resume/events</p>
+      </div>
+    </section>
+
+    <!-- Row 2: state|ckpt + tools|runtime + services -->
+    <div class="mid">
+      <section class="panel p-mid">
+        <div class="ph"><span>①b 共享状态 + Checkpoint</span><span class="t">State/CKPT</span></div>
+        <div class="pb cols2">
+          <div class="box">
+            <h4>ResearchState（活黑板）</h4>
+            <ul>
+              <li>一次任务内存字典；节点只改自己字段</li>
+              <li><b>身份</b>：task_id · thread_id · current_node · completed_nodes</li>
+              <li><b>文献</b>：papers → paper_cards → analysis/limitations → evolution/critiques</li>
+              <li><b>Gap</b>：candidate → verified · results · final_report</li>
+              <li><b>控制</b>：tool_call_count · round · traces · warnings · termination · status</li>
+              <li><b>不放</b>：DB连接、模型客户端、PDF二进制</li>
+            </ul>
+            <div class="step">节点改 State → SSE推摘要 → 下一节点读最新 State</div>
+          </div>
+          <div class="box">
+            <h4>Checkpoint（黑板拍照）</h4>
+            <ul>
+              <li><b>业务主路径</b>：每节点完成 → research_tasks 写完整 state_json</li>
+              <li>附带 node_name、completed_nodes、task status</li>
+              <li><b>Resume</b>：读 latest → 灌回 State → 跳过已完成节点</li>
+              <li>events 可重放 SSE；side_effect_log 防重复写 Gap/Query</li>
+              <li>LangGraph SqliteSaver 另库，主要用于 invoke；流式恢复靠业务 CKPT</li>
+            </ul>
+            <div class="step">Node done → save_checkpoint → 崩溃后 Resume → completed_nodes 跳过</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel p-flow">
+        <div class="ph" style="background:#dcfce7"><span>② 工具箱 + Runtime</span><span class="t" style="background:var(--green)">Agent</span></div>
+        <div class="pb cols2">
+          <div class="box">
+            <h4>工具箱 @tool 白名单</h4>
+            <ul>
+              <li><code>search_papers</code> 再检索（有限改写）</li>
+              <li><code>retrieve_rag</code> 本轮块 Top-K（空不联网）</li>
+              <li><code>recall_memory</code> 同 topic 历史 Gap/Query</li>
+              <li>citing / citation_context / read_section</li>
+              <li>判决后 <code>save_gap</code>→Memory（幂等）</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h4>ToolRuntime</h4>
+            <ul>
+              <li>次数·超时·签名去重·空结果 streak</li>
+              <li>timeout/429/短暂故障 → 退避+抖动重试</li>
+              <li>traces → State → SSE 时间线</li>
+              <li>换源在 Search 服务；问用户在 planner</li>
+              <li>模型默认 Qwen（DashScope）</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel p-flow">
+        <div class="ph" style="background:#ffedd5"><span>③ 能力服务</span><span class="t" style="background:#c2410c">Svc</span></div>
+        <div class="pb">
+          <div class="box" style="margin-bottom:4px">
+            <h4>AcademicSearch</h4>
+            <ul>
+              <li>OpenAlex ↔ S2 → Seed</li>
+              <li>sanitize query；空结果换源</li>
+            </ul>
+          </div>
+          <div class="box">
+            <h4>全文 / 引用</h4>
+            <ul>
+              <li>OA PDF + pypdf → 章节块喂 RAG</li>
+              <li>Citation 语境；演进+生命周期 → Memory artifacts</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Row 3: Memory + RAG design (核心细节) -->
+    <div class="memrag">
+      <section class="panel p-bot">
+        <div class="ph"><span>④a Research Memory · 跨次避坑（非工作记忆）</span><span class="t">memory.py</span></div>
+        <div class="pb">
+          <div class="pipe">
+            <span>topic normalize</span><span class="arr">→</span>
+            <span>recall_bundle</span><span class="arr">→</span>
+            <span>State.research_memory</span><span class="arr">→</span>
+            <span>planner/discover/verify</span><span class="arr">→</span>
+            <span>save_gap / save_query</span>
+          </div>
+          <div class="cols2">
+            <div class="box">
+              <h4>分层（可对上教材）</h4>
+              <ul>
+                <li><b>短期</b>：State + verify <code>messages</code>（可截断压缩）</li>
+                <li><b>情节</b>：<code>gaps/queries/papers/artifacts</code></li>
+                <li><b>语义</b>：<code>semantic_lessons</code>（REJECTED 蒸馏规则）</li>
+                <li><b>程序</b>：<code>procedures</code>（verify/search SOP）</li>
+                <li><b>实体</b>：<code>entities</code>（stats/rejected_pattern/keep）</li>
+              </ul>
+              <h4 style="margin-top:4px">库</h4>
+              <ul>
+                <li>全在 SQLite <code>research_memory.db</code>（同库分表）</li>
+                <li>键：<code>normalize_topic</code> 精确匹配</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>读 · memory_recall</h4>
+              <ul>
+                <li><code>recall_bundle</code>→情节+语义+实体+程序 → State</li>
+                <li>字段：<code>research_memory</code> / <code>memory_semantic_lessons</code> / <code>memory_entities</code> / <code>memory_procedures</code></li>
+                <li>planner/verify 注入 lessons + SOP</li>
+              </ul>
+              <h4 style="margin-top:4px">写 · 整合</h4>
+              <ul>
+                <li><code>save_gap</code> 后 <code>consolidate_after_episode</code></li>
+                <li>相似 lesson 合并；query/lesson 剪枝</li>
+                <li>空语义层时自动 backfill 一次</li>
+                <li>verify：旧 ToolMessage 截断压缩</li>
+              </ul>
+            </div>
+          </div>
+          <div class="step">目的：同 topic 不重复踩已 REJECTED 路径；Query 剪枝防爆库 · 与 Checkpoint/Chroma 库隔离</div>
+        </div>
+      </section>
+
+      <section class="panel p-bot">
+        <div class="ph"><span>④b PaperRAG · 只服务 Gap 取证（非通用问答）</span><span class="t">rag.py</span></div>
+        <div class="pb">
+          <div class="pipe">
+            <span>PaperCard/全文/memory</span><span class="arr">→</span>
+            <span>切块</span><span class="arr">→</span>
+            <span>Embed+Chroma</span><span class="arr">∥</span>
+            <span>Lexical</span><span class="arr">→</span>
+            <span>Top-K</span><span class="arr">→</span>
+            <span>ContextBuilder</span>
+          </div>
+          <div class="cols2">
+            <div class="box">
+              <h4>入库（gap_verify 前）</h4>
+              <ul>
+                <li>每 PaperCard → abstract / method / problem / limitations</li>
+                <li>OA 全文块 <code>add_fulltext_chunks</code>（section=章节）</li>
+                <li>本轮 <code>research_memory</code> 也灌入（section=memory）</li>
+                <li>meta：paper_id · title · year · section；文≤4k</li>
+                <li>默认 <code>CHROMA_CLEAR_ON_INIT</code>：本轮会话索引</li>
+              </ul>
+              <h4 style="margin-top:4px">双后端</h4>
+              <ul>
+                <li>主：Chroma + DashScope embed（cosine）</li>
+                <li>备：内存 Lexical（token 余弦）</li>
+                <li>块同时写两路；Chroma 空/失败 → Lexical</li>
+              </ul>
+            </div>
+            <div class="box">
+              <h4>检索 · retrieve_rag</h4>
+              <ul>
+                <li>query = gap 描述 + verification_queries</li>
+                <li>Top-K；可按 section 过滤 <code>retrieve_section</code></li>
+                <li><b>空命中不自动联网</b>（再搜走 search_papers）</li>
+                <li>hit：score · section · title · text[:800]</li>
+              </ul>
+              <h4 style="margin-top:4px">ContextBuilder</h4>
+              <ul>
+                <li>gather → select → structure → compress</li>
+                <li>拼：Gap · 相关 PaperCard · RAG hits · Memory · 新搜</li>
+                <li>超 max_chars≈6k 截断；喂单次 LLM</li>
+              </ul>
+            </div>
+          </div>
+          <div class="step">目的：verify Agent 用库内证据判决 KEEP/REFINED/REJECTED · 不是聊天知识库</div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Row 4: storage relations -->
+    <section class="panel p-bot">
+      <div class="ph"><span>⑤ 库边界 · State 传参 · CKPT 拍照 · Memory/RAG 外置</span><span class="t">Storage</span></div>
+      <div class="pb bot">
+        <div class="box">
+          <h4>research_memory.db</h4>
+          <ul>
+            <li>跨 run 长期表（gaps/queries/papers/artifacts）</li>
+            <li>≠ State；召回后才进黑板</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>Chroma / Lexical</h4>
+          <ul>
+            <li>本轮证据索引；persist 目录可清</li>
+            <li>≠ Memory；Memory 条目可再灌入 RAG</li>
+          </ul>
+        </div>
+        <div class="box">
+          <h4>research_tasks.db + 关系</h4>
+          <ul>
+            <li>checkpoints(state_json) · events · side_effect 幂等</li>
+            <li><b>State</b>活数据 · <b>CKPT</b>整包恢复 · Memory/RAG 非节点传参</li>
+            <li>另：langgraph_checkpoints.db（invoke）</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 5: APIs -->
+    <section class="panel p-api">
+      <div class="ph"><span>⑥ 最底层</span><span class="t">APIs</span></div>
+      <div class="pb api">
+        <div class="box"><h4>LLM</h4><ul><li>Qwen/DashScope</li><li>可选 Ollama</li></ul></div>
+        <div class="box"><h4>Embedding</h4><ul><li>DashScope</li><li>失败→词法</li></ul></div>
+        <div class="box"><h4>文献</h4><ul><li>OpenAlex</li><li>S2 · Seed</li></ul></div>
+        <div class="box"><h4>全文</h4><ul><li>OA PDF</li><li>pypdf</li></ul></div>
+        <div class="box"><h4>本地</h4><ul><li>Chroma</li><li>SQLite×3</li></ul></div>
+        <div class="box"><h4>不用</h4><ul><li>MCP</li><li>Skill Registry</li></ul></div>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

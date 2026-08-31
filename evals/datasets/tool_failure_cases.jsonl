@@ -1,0 +1,5 @@
+{"case_id":"tf-01","error":"timed out waiting","expect":{"error_type":"timeout","retryable":true,"suggested_action":"retry"}}
+{"case_id":"tf-02","error":"429 rate limit","expect":{"error_type":"rate_limit","retryable":true,"suggested_action":"retry"}}
+{"case_id":"tf-03","error":"403 forbidden permission","expect":{"error_type":"permission","retryable":false,"suggested_action":"stop"}}
+{"case_id":"tf-04","error":"invalid schema validation","expect":{"error_type":"invalid_argument","retryable":false,"suggested_action":"stop"}}
+{"case_id":"tf-05","error":"connection reset temporarily unavailable","expect":{"error_type":"transient","retryable":true,"suggested_action":"retry"}}
